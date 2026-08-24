@@ -3,19 +3,20 @@ import { nav } from '../../../integration-tests-cypress/views/nav';
 import { operator, GlobalInstalledNamespace, TestOperandProps } from '../views/operator.view';
 
 const testOperator = {
-  name: 'Service Binding Operator',
-  operatorHubCardTestID: 'rh-service-binding-operator-redhat-operators-openshift-marketplace',
+  name: 'Argo CD',
+  operatorHubCardTestID: 'argocd-operator-community-operators-openshift-marketplace',
 };
 
 const testOperand: TestOperandProps = {
-  name: 'ServiceBinding',
-  group: 'binding.operators.coreos.com',
+  name: 'ArgoCD',
+  group: 'argoproj.io',
   version: 'v1alpha1',
-  kind: 'ServiceBinding',
-  createActionID:
-    'list-page-create-dropdown-item-binding.operators.coreos.com~v1alpha1~ServiceBinding',
-  exampleName: 'example-servicebinding',
+  kind: 'ArgoCD',
+  createActionID: 'list-page-create-dropdown-item-argoproj.io~v1alpha1~ArgoCD',
+  exampleName: 'example-argocd',
 };
+
+let operatorInstalled = false;
 
 describe(`Globally installing "${testOperator.name}" operator in ${GlobalInstalledNamespace}`, () => {
   before(() => {
@@ -24,6 +25,7 @@ describe(`Globally installing "${testOperator.name}" operator in ${GlobalInstall
     nav.sidenav.switcher.changePerspectiveTo('Administrator');
     nav.sidenav.switcher.shouldHaveText('Administrator');
     operator.install(testOperator.name, testOperator.operatorHubCardTestID);
+    operatorInstalled = true;
   });
 
   afterEach(() => {
@@ -31,8 +33,10 @@ describe(`Globally installing "${testOperator.name}" operator in ${GlobalInstall
   });
 
   after(() => {
-    operator.uninstall(testOperator.name);
-    operator.shouldNotExist(testOperator.name);
+    if (operatorInstalled) {
+      operator.uninstall(testOperator.name);
+      operator.shouldNotExist(testOperator.name);
+    }
     cy.logout();
   });
 

@@ -5,18 +5,20 @@ import { nav } from '../../../integration-tests-cypress/views/nav';
 import { GlobalInstalledNamespace, operator, TestOperandProps } from '../views/operator.view';
 
 const testOperator = {
-  name: 'Red Hat Integration - 3scale',
-  operatorHubCardTestID: '3scale-operator-redhat-operators-openshift-marketplace',
+  name: 'Grafana Operator',
+  operatorHubCardTestID: 'grafana-operator-community-operators-openshift-marketplace',
   installedNamespace: testName,
 };
 
 const testOperand: TestOperandProps = {
-  name: '3scale Backend',
-  group: 'capabilities.3scale.net',
+  name: 'GrafanaFolder',
+  group: 'grafana.integreatly.org',
   version: 'v1beta1',
-  kind: 'Backend',
-  exampleName: `backend1-sample`,
+  kind: 'GrafanaFolder',
+  exampleName: `example-grafanafolder`,
 };
+
+let operatorInstalled = false;
 
 describe(`Installing "${testOperator.name}" operator in test namespace`, () => {
   before(() => {
@@ -32,8 +34,10 @@ describe(`Installing "${testOperator.name}" operator in test namespace`, () => {
   });
 
   after(() => {
-    operator.uninstall(testOperator.name, testOperator.installedNamespace);
-    operator.shouldNotExist(testOperator.name, testOperator.installedNamespace);
+    if (operatorInstalled) {
+      operator.uninstall(testOperator.name, testOperator.installedNamespace);
+      operator.shouldNotExist(testOperator.name, testOperator.installedNamespace);
+    }
     cy.deleteProject(testName);
     cy.logout();
   });
@@ -45,6 +49,7 @@ describe(`Installing "${testOperator.name}" operator in test namespace`, () => {
       testOperator.installedNamespace,
     );
     operator.installedSucceeded(testOperator.name);
+    operatorInstalled = true;
 
     operator.navToDetailsPage(testOperator.name, testOperator.installedNamespace);
     cy.byTestSectionHeading('Provided APIs').should('exist');
