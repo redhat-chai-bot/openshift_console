@@ -65,6 +65,7 @@ import {
   TopologyViewType,
 } from '../../topology-types';
 import Topology from '../graph-view/Topology';
+import TopologyHPAProvider from '../graph-view/TopologyHPAProvider';
 import TopologyListView from '../list-view/TopologyListView';
 import TopologyQuickSearch from '../quick-search/TopologyQuickSearch';
 import { isSidebarRenderable, SelectedEntityDetails } from '../side-bar/SelectedEntityDetails';
@@ -340,13 +341,15 @@ export const ConnectedTopologyView: React.FC<ComponentProps> = ({
             setVisualization={setVisualization}
           />
         ) : (
-          <Topology
-            model={filteredModel}
-            namespace={namespace}
-            application={applicationRef.current}
-            onSelect={onSelect}
-            setVisualization={setVisualization}
-          />
+          <TopologyHPAProvider namespace={namespace}>
+            <Topology
+              model={filteredModel}
+              namespace={namespace}
+              application={applicationRef.current}
+              onSelect={onSelect}
+              setVisualization={setVisualization}
+            />
+          </TopologyHPAProvider>
         )
       ) : null,
     [filteredModel, namespace, onSelect, viewType, nodesLength, showTopologyAnyway],

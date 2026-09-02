@@ -9,8 +9,8 @@ import {
   getPodData,
   podDataInProgress,
   usePodRingLabel,
-  useRelatedHPA,
 } from '@console/shared';
+import { useTopologyHPA } from './useTopologyHPA';
 
 interface InnerPodStatusRadius {
   innerPodStatusOuterRadius: number;
@@ -63,12 +63,7 @@ const PodSet: React.FC<PodSetProps> = React.memo(function PodSet({
   );
   const { inProgressDeploymentData, completedDeploymentData } = getPodData(data);
 
-  const [hpa] = useRelatedHPA(
-    data.obj?.apiVersion,
-    data.obj?.kind,
-    data.obj?.metadata?.name,
-    data.obj?.metadata?.namespace,
-  );
+  const [hpa] = useTopologyHPA(data.obj?.apiVersion, data.obj?.kind, data.obj?.metadata?.name);
   const hpaControlledScaling = !!hpa;
 
   const obj = data.current?.obj || data.obj;
