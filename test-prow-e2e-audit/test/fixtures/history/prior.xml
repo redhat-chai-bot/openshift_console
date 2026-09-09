@@ -1,0 +1,1 @@
+<?xml version="1.0"?><testsuites><testsuite name="console" timestamp="2026-09-02T13:00:00Z"><testcase classname="suite" name="stable"/><testcase classname="suite" name="flaky &amp; retry"><failure/></testcase><testcase classname="suite" name="flaky &amp; retry"/></testsuite></testsuites>
