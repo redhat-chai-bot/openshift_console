@@ -33,7 +33,7 @@ const props = {
 
 describe('SecretsDetailsPage', () => {
   beforeEach(() => {
-    jest.mocked(useK8sWatchResources).mockReturnValue({
+    (useK8sWatchResources as jest.Mock).mockReturnValue({
       obj: { data: secret, loaded: true, loadError: undefined },
     });
   });
@@ -42,12 +42,11 @@ describe('SecretsDetailsPage', () => {
     jest.clearAllMocks();
   });
 
-  it('keeps values revealed across page rerenders and resource updates until hidden', async () => {
-    const user = userEvent.setup();
+  it('keeps values revealed across page rerenders and resource updates until hidden', () => {
     const { rerender } = renderWithProviders(<SecretsDetailsPage {...props} />);
 
     expect(screen.queryByText('original-password')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Reveal values' }));
+    userEvent.click(screen.getByRole('button', { name: 'Reveal values' }));
     expect(screen.getByText('original-password')).toBeVisible();
 
     rerender(<SecretsDetailsPage {...props} />);
@@ -59,13 +58,13 @@ describe('SecretsDetailsPage', () => {
       metadata: { ...secret.metadata, resourceVersion: '2' },
       data: { password: Base64.encode('updated-password') },
     };
-    jest.mocked(useK8sWatchResources).mockReturnValue({
+    (useK8sWatchResources as jest.Mock).mockReturnValue({
       obj: { data: updatedSecret, loaded: true, loadError: undefined },
     });
     rerender(<SecretsDetailsPage {...props} />);
     expect(screen.getByText('updated-password')).toBeVisible();
 
-    await user.click(screen.getByRole('button', { name: 'Hide values' }));
+    userEvent.click(screen.getByRole('button', { name: 'Hide values' }));
     expect(screen.queryByText('updated-password')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reveal values' })).toBeVisible();
   });
