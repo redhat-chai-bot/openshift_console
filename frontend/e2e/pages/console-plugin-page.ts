@@ -1,5 +1,7 @@
 import type { Locator } from '@playwright/test';
 
+import { expect } from '../fixtures';
+
 import BasePage from './base-page';
 
 export class ConsolePluginPage extends BasePage {
@@ -51,8 +53,18 @@ export class ConsolePluginPage extends BasePage {
   }
 
   async openAboutModal(): Promise<void> {
-    await this.robustClick(this.page.getByTestId('help-dropdown-toggle'));
-    await this.robustClick(this.page.getByRole('menuitem', { name: 'About', exact: true }));
+    const helpToggle = this.page.getByTestId('help-dropdown-toggle');
+    const aboutItem = this.page.getByRole('menuitem', { name: 'About', exact: true });
+    // The help dropdown can close before the menu item is clicked if a
+    // re-render or focus change races the interaction.  Retry the toggle
+    // click until the menu item is confirmed visible.
+    await expect(async () => {
+      if (!(await aboutItem.isVisible().catch(() => false))) {
+        await helpToggle.click();
+      }
+      await expect(aboutItem).toBeVisible({ timeout: 5_000 });
+    }).toPass({ timeout: 30_000 });
+    await aboutItem.click();
   }
 
   async navigateToDynamicRoute(id: string): Promise<void> {

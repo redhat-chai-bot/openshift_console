@@ -42,7 +42,7 @@ interface ManifestResource {
     let modalPage: ModalPage;
 
     test.beforeAll(async ({ k8sClient }) => {
-      test.setTimeout(180_000);
+      test.setTimeout(480_000);
       if (SHOULD_DEPLOY_PLUGIN) {
         const manifestPath = path.resolve(
           import.meta.dirname,
@@ -99,7 +99,10 @@ interface ManifestResource {
           body: deployment as unknown as Record<string, unknown>,
         });
 
-        await k8sClient.waitForDeploymentReady(PLUGIN_NAME, PLUGIN_NAME);
+        // The demo plugin image is ~2 GB; CI image pulls alone can take over
+        // two minutes.  Use a generous timeout so that slow-registry runs do
+        // not time out before the readiness probe passes.
+        await k8sClient.waitForDeploymentReady(PLUGIN_NAME, PLUGIN_NAME, 360_000);
 
         await k8sClient.createClusterCustomResource(
           'console.openshift.io',
@@ -171,7 +174,7 @@ interface ManifestResource {
     test('verifies Dashboard Card nav item', async ({ page }) => {
       await consolePluginPage.navigateToOverview();
       const demoDashboardTab = page.getByTestId('horizontal-link-Demo Dashboard');
-      await expect(demoDashboardTab).toHaveText('Demo Dashboard');
+      await expect(demoDashboardTab).toHaveText('Demo Dashboard', { timeout: 30_000 });
       await demoDashboardTab.click();
       await expect(page.getByTestId('demo-plugin-dashboard-card')).toContainText(
         'Metrics Dashboard Card example',
@@ -182,8 +185,13 @@ interface ManifestResource {
     test('verifies Dynamic Nav items', async ({ page }) => {
       for (const navID of ['1', '2']) {
         await test.step(`Dynamic Nav ${navID}`, async () => {
-          await consolePluginPage.navigateToDynamicRoute(navID);
-          await expect(page.getByTestId('title')).toContainText(`Dynamic Page ${navID}`);
+          // Plugin-provided routes are registered asynchronously after the
+          // console SPA boots. Re-navigate until the plugin route resolves
+          // instead of showing the built-in 404 page.
+          await expect(async () => {
+            await consolePluginPage.navigateToDynamicRoute(navID);
+            await expect(page.getByTestId('title')).toContainText(`Dynamic Page ${navID}`);
+          }).toPass({ timeout: 30_000, intervals: [5_000] });
           await expect(page.getByTestId('alert-info')).toContainText('Example info alert');
           await expect(page.getByTestId('alert-warning')).toContainText('Example warning alert');
           await expect(page.getByTestId('hint')).toContainText('Example hint');
@@ -203,10 +211,14 @@ interface ManifestResource {
 
     test('verifies List Page nav item', async ({ page }) => {
       const podName = 'openshift-state-metrics';
-      await consolePluginPage.navigateToDemoListPage();
-      await expect(page.getByTestId('page-heading').locator('h1')).toContainText(
-        'OpenShift Pods List Page',
-      );
+      const heading = page.getByTestId('page-heading').locator('h1');
+      // After plugin enablement the console pods restart via rolling update.
+      // The plugin route may not be served by every pod until the rollout
+      // completes, so retry navigation until the route resolves.
+      await expect(async () => {
+        await consolePluginPage.navigateToDemoListPage();
+        await expect(heading).toContainText('OpenShift Pods List Page');
+      }).toPass({ timeout: 60_000, intervals: [5_000] });
       await listPage.filterByNameInput(podName);
       await expect(listPage.cells.filter({ hasText: podName }).first()).toBeVisible();
     });
